@@ -2,7 +2,10 @@
 const state = {
   active: false,
   total: 10,
-  ops: new Set(['add', 'sub', 'mul', 'div']),
+  strand: 'number',
+  numOps: new Set(['add', 'sub', 'mul', 'div']),
+  geoOps: new Set(['perimeter', 'area', 'angles', 'shapes', 'units', 'time']),
+  statOps: new Set(['mean', 'range', 'mode', 'median', 'probability']),
   players: [
     { score: 0, answer: 0, name: 'Player 1' },
     { score: 0, answer: 0, name: 'Player 2' }
@@ -58,11 +61,11 @@ function playWin() {
   } catch (_) {}
 }
 
-/* ─── QUESTION GENERATOR ─── */
+/* ─── QUESTION GENERATORS ─── */
 const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 
-function makeQuestion() {
-  const pool = [...state.ops];
+function makeNumberQuestion() {
+  const pool = [...state.numOps];
   if (!pool.length) return { text: '10 + 10 = ?', answer: 20, op: 'add' };
   const op = pool[ri(0, pool.length - 1)];
   let a, b, answer, display;
@@ -91,13 +94,153 @@ function makeQuestion() {
   return { text: display, answer, op };
 }
 
-const opLabels = { add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division' };
-const opClass  = { add: 'op-add',   sub: 'op-sub',      mul: 'op-mul',         div: 'op-div'   };
+function makeGeometryQuestion() {
+  const pool = [...state.geoOps];
+  if (!pool.length) return { text: 'Sides in a square?', answer: 4, op: 'shapes' };
+  const op = pool[ri(0, pool.length - 1)];
+  let answer, display;
+
+  switch (op) {
+    case 'perimeter': {
+      const a = ri(3, 12), b = ri(3, 12);
+      answer = 2 * (a + b);
+      display = `Perimeter: ${a}×${b} rect?`;
+      break;
+    }
+    case 'area': {
+      const a = ri(3, 12), b = ri(3, 12);
+      answer = a * b;
+      display = `Area: ${a}×${b} rect?`;
+      break;
+    }
+    case 'angles': {
+      const a1 = ri(20, 80);
+      const a2 = ri(20, Math.min(80, 160 - a1));
+      answer = 180 - a1 - a2;
+      display = `△: ${a1}°+${a2}°+?=180°`;
+      break;
+    }
+    case 'shapes': {
+      const options = [
+        ['triangle', 3], ['square', 4], ['pentagon', 5],
+        ['hexagon', 6], ['heptagon', 7], ['octagon', 8]
+      ];
+      const [name, sides] = options[ri(0, options.length - 1)];
+      answer = sides;
+      display = `Sides in a ${name}?`;
+      break;
+    }
+    case 'units': {
+      const type = ri(0, 2);
+      if (type === 0) {
+        answer = ri(1, 9);
+        display = `${answer * 100} cm = ? m`;
+      } else if (type === 1) {
+        const m = ri(1, 9); answer = m * 100;
+        display = `${m} m = ? cm`;
+      } else {
+        const km = ri(1, 5); answer = km * 1000;
+        display = `${km} km = ? m`;
+      }
+      break;
+    }
+    case 'time': {
+      const type = ri(0, 1);
+      if (type === 0) {
+        const h = ri(1, 5); answer = h * 60;
+        display = `${h} hr = ? min`;
+      } else {
+        const m = ri(1, 9); answer = m * 60;
+        display = `${m} min = ? sec`;
+      }
+      break;
+    }
+  }
+  return { text: display, answer, op };
+}
+
+function makeStatisticsQuestion() {
+  const pool = [...state.statOps];
+  if (!pool.length) return { text: 'Mean: 4,8,12?', answer: 8, op: 'mean' };
+  const op = pool[ri(0, pool.length - 1)];
+  let answer, display;
+
+  switch (op) {
+    case 'mean': {
+      const avg = ri(3, 12);
+      const d1 = ri(1, avg - 1);
+      const d2 = ri(1, d1);
+      const nums = [avg - d1, avg + d2, avg + d1 - d2].sort(() => Math.random() - 0.5);
+      answer = avg;
+      display = `Mean: ${nums.join(',')}?`;
+      break;
+    }
+    case 'range': {
+      const min = ri(2, 10);
+      const max = min + ri(5, 12);
+      const mid1 = ri(min + 1, max - 1);
+      const mid2 = ri(min + 1, max - 1);
+      const nums = [min, mid1, mid2, max].sort(() => Math.random() - 0.5);
+      answer = max - min;
+      display = `Range: ${nums.join(',')}?`;
+      break;
+    }
+    case 'mode': {
+      const mode = ri(2, 10);
+      const others = [];
+      while (others.length < 2) {
+        const n = ri(1, 15);
+        if (n !== mode && !others.includes(n)) others.push(n);
+      }
+      const nums = [mode, mode, others[0], others[1]].sort(() => Math.random() - 0.5);
+      answer = mode;
+      display = `Mode: ${nums.join(',')}?`;
+      break;
+    }
+    case 'median': {
+      const a = ri(1, 9), b = ri(10, 19), c = ri(20, 30);
+      answer = b;
+      display = `Median: ${a},${b},${c}?`;
+      break;
+    }
+    case 'probability': {
+      const total = ri(8, 20);
+      const fav = ri(1, total - 1);
+      answer = total - fav;
+      display = `${fav} red out of ${total}. Not red?`;
+      break;
+    }
+  }
+  return { text: display, answer, op };
+}
+
+function makeQuestion() {
+  if (state.strand === 'geometry') return makeGeometryQuestion();
+  if (state.strand === 'statistics') return makeStatisticsQuestion();
+  return makeNumberQuestion();
+}
+
+const opLabels = {
+  add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division',
+  perimeter: 'Perimeter', area: 'Area', angles: 'Angles',
+  shapes: 'Shapes', units: 'Units', time: 'Time',
+  mean: 'Mean', range: 'Range', mode: 'Mode',
+  median: 'Median', probability: 'Probability'
+};
+const opClass = {
+  add: 'op-add', sub: 'op-sub', mul: 'op-mul', div: 'op-div',
+  perimeter: 'op-perimeter', area: 'op-area', angles: 'op-angles',
+  shapes: 'op-shapes', units: 'op-units', time: 'op-time',
+  mean: 'op-mean', range: 'op-range', mode: 'op-mode',
+  median: 'op-median', probability: 'op-probability'
+};
 
 function setQuestion(p) {
   const q = makeQuestion();
   state.players[p].answer = q.answer;
-  document.getElementById(`question${p + 1}`).textContent = q.text;
+  const qEl = document.getElementById(`question${p + 1}`);
+  qEl.textContent = q.text;
+  qEl.className = 'question-text' + (state.strand !== 'number' ? ' sm' : '');
   const badge = document.getElementById(`opbadge${p + 1}`);
   badge.textContent = opLabels[q.op];
   badge.className = `op-badge ${opClass[q.op]}`;
@@ -286,13 +429,29 @@ function startGame() {
 }
 
 /* ─── UI EVENT LISTENERS ─── */
+
+// Strand selector
+document.querySelectorAll('.strand-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.strand-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.strand = btn.dataset.strand;
+    document.getElementById('opSelectorNumber').classList.toggle('hidden', state.strand !== 'number');
+    document.getElementById('opSelectorGeometry').classList.toggle('hidden', state.strand !== 'geometry');
+    document.getElementById('opSelectorStatistics').classList.toggle('hidden', state.strand !== 'statistics');
+  });
+});
+
+// Op toggles (strand-aware)
 document.querySelectorAll('.op-toggle').forEach(btn => {
   btn.addEventListener('click', () => {
     const op = btn.dataset.op;
-    if (state.ops.has(op)) {
-      if (state.ops.size > 1) { state.ops.delete(op); btn.classList.remove('active'); }
+    const strand = btn.dataset.strand;
+    const set = strand === 'geometry' ? state.geoOps : strand === 'statistics' ? state.statOps : state.numOps;
+    if (set.has(op)) {
+      if (set.size > 1) { set.delete(op); btn.classList.remove('active'); }
     } else {
-      state.ops.add(op); btn.classList.add('active');
+      set.add(op); btn.classList.add('active');
     }
   });
 });

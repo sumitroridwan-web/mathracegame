@@ -285,6 +285,21 @@
     .op-mul    { background: rgba(200,100,255,0.2); color: #dd88ff; border: 1px solid rgba(200,100,255,0.4); }
     .op-div    { background: rgba(100,200,255,0.2); color: #88ddff; border: 1px solid rgba(100,200,255,0.4); }
 
+    /* Geometry op badges */
+    .op-perimeter { background: rgba(50,220,100,0.2);  color: #44ff99; border: 1px solid rgba(50,220,100,0.4); }
+    .op-area      { background: rgba(60,200,120,0.2);  color: #55ee88; border: 1px solid rgba(60,200,120,0.4); }
+    .op-angles    { background: rgba(80,220,160,0.2);  color: #66ffcc; border: 1px solid rgba(80,220,160,0.4); }
+    .op-shapes    { background: rgba(40,200,180,0.2);  color: #44ddcc; border: 1px solid rgba(40,200,180,0.4); }
+    .op-units     { background: rgba(60,180,200,0.2);  color: #55ccee; border: 1px solid rgba(60,180,200,0.4); }
+    .op-time      { background: rgba(80,160,220,0.2);  color: #66aaff; border: 1px solid rgba(80,160,220,0.4); }
+
+    /* Statistics op badges */
+    .op-mean        { background: rgba(180,100,255,0.2); color: #cc88ff; border: 1px solid rgba(180,100,255,0.4); }
+    .op-range       { background: rgba(200,80,240,0.2);  color: #dd77ff; border: 1px solid rgba(200,80,240,0.4); }
+    .op-mode        { background: rgba(160,80,255,0.2);  color: #bb77ff; border: 1px solid rgba(160,80,255,0.4); }
+    .op-median      { background: rgba(140,100,230,0.2); color: #aa88ee; border: 1px solid rgba(140,100,230,0.4); }
+    .op-probability { background: rgba(120,80,255,0.2);  color: #9977ff; border: 1px solid rgba(120,80,255,0.4); }
+
     .answer-wrap { display: flex; gap: 8px; justify-content: center; align-items: center; }
 
     .answer-input {
@@ -377,14 +392,29 @@
     .name-group.p1 .name-input:focus { border-color: #ff6b35; }
     .name-group.p2 .name-input:focus { border-color: #00c8ff; }
 
+    /* Strand selector */
+    .strand-selector { margin-bottom: 18px; text-align: center; }
+    .strand-selector p { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-bottom: 10px; }
+    .strand-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .strand-btn {
+      padding: 9px 20px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.45);
+      cursor: pointer; font-size: 0.9rem; font-weight: 700;
+      transition: all 0.2s; user-select: none;
+    }
+    .strand-btn[data-strand="number"].active  { border-color: #ffcc00; color: #ffcc00; background: rgba(255,200,0,0.1); }
+    .strand-btn[data-strand="geometry"].active { border-color: #44ff99; color: #44ff99; background: rgba(50,220,100,0.1); }
+    .strand-btn[data-strand="statistics"].active { border-color: #cc88ff; color: #cc88ff; background: rgba(180,100,255,0.1); }
+
     /* Operation selector */
-    .op-selector { margin-bottom: 24px; text-align: center; }
+    .op-selector { margin-bottom: 18px; text-align: center; }
+    .op-selector.hidden { display: none; }
     .op-selector p { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-bottom: 10px; }
     .op-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     .op-toggle {
-      padding: 7px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.15);
+      padding: 7px 14px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.15);
       background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5);
-      cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; font-size: 0.82rem; font-weight: 600;
       transition: all 0.2s; user-select: none;
     }
     .op-toggle.active {
@@ -395,6 +425,22 @@
     .op-toggle[data-op="sub"].active    { border-color: #ffdd66; color: #ffdd66; background: rgba(255,180,50,0.1); }
     .op-toggle[data-op="mul"].active    { border-color: #dd88ff; color: #dd88ff; background: rgba(200,100,255,0.1); }
     .op-toggle[data-op="div"].active    { border-color: #88ddff; color: #88ddff; background: rgba(100,200,255,0.1); }
+    /* Geometry toggle active states */
+    .op-toggle[data-op="perimeter"].active { border-color: #44ff99; color: #44ff99; background: rgba(50,220,100,0.1); }
+    .op-toggle[data-op="area"].active      { border-color: #55ee88; color: #55ee88; background: rgba(60,200,120,0.1); }
+    .op-toggle[data-op="angles"].active    { border-color: #66ffcc; color: #66ffcc; background: rgba(80,220,160,0.1); }
+    .op-toggle[data-op="shapes"].active    { border-color: #44ddcc; color: #44ddcc; background: rgba(40,200,180,0.1); }
+    .op-toggle[data-op="units"].active     { border-color: #55ccee; color: #55ccee; background: rgba(60,180,200,0.1); }
+    .op-toggle[data-op="time"].active      { border-color: #66aaff; color: #66aaff; background: rgba(80,160,220,0.1); }
+    /* Statistics toggle active states */
+    .op-toggle[data-op="mean"].active        { border-color: #cc88ff; color: #cc88ff; background: rgba(180,100,255,0.1); }
+    .op-toggle[data-op="range"].active       { border-color: #dd77ff; color: #dd77ff; background: rgba(200,80,240,0.1); }
+    .op-toggle[data-op="mode"].active        { border-color: #bb77ff; color: #bb77ff; background: rgba(160,80,255,0.1); }
+    .op-toggle[data-op="median"].active      { border-color: #aa88ee; color: #aa88ee; background: rgba(140,100,230,0.1); }
+    .op-toggle[data-op="probability"].active { border-color: #9977ff; color: #9977ff; background: rgba(120,80,255,0.1); }
+
+    /* Smaller question text for longer geometry/stats questions */
+    .question-text.sm { font-size: clamp(0.95rem, 2.5vw, 1.4rem); letter-spacing: 0.5px; }
 
     /* Questions selector */
     .q-selector { margin-bottom: 28px; text-align: center; }
@@ -582,13 +628,45 @@
     </div>
   </div>
 
-  <div class="op-selector">
+  <div class="strand-selector">
+    <p>Choose theme</p>
+    <div class="strand-buttons">
+      <div class="strand-btn active" data-strand="number">🔢 Number</div>
+      <div class="strand-btn" data-strand="geometry">📐 Geometry &amp; Measure</div>
+      <div class="strand-btn" data-strand="statistics">📊 Statistics &amp; Probability</div>
+    </div>
+  </div>
+
+  <div class="op-selector" id="opSelectorNumber">
     <p>Choose operations</p>
     <div class="op-buttons">
-      <div class="op-toggle active" data-op="add">➕ Addition</div>
-      <div class="op-toggle active" data-op="sub">➖ Subtraction</div>
-      <div class="op-toggle active" data-op="mul">✖ Multiply</div>
-      <div class="op-toggle active" data-op="div">➗ Division</div>
+      <div class="op-toggle active" data-op="add" data-strand="number">➕ Addition</div>
+      <div class="op-toggle active" data-op="sub" data-strand="number">➖ Subtraction</div>
+      <div class="op-toggle active" data-op="mul" data-strand="number">✖ Multiply</div>
+      <div class="op-toggle active" data-op="div" data-strand="number">➗ Division</div>
+    </div>
+  </div>
+
+  <div class="op-selector hidden" id="opSelectorGeometry">
+    <p>Choose topics</p>
+    <div class="op-buttons">
+      <div class="op-toggle active" data-op="perimeter" data-strand="geometry">📏 Perimeter</div>
+      <div class="op-toggle active" data-op="area" data-strand="geometry">▭ Area</div>
+      <div class="op-toggle active" data-op="angles" data-strand="geometry">📐 Angles</div>
+      <div class="op-toggle active" data-op="shapes" data-strand="geometry">⬡ Shapes</div>
+      <div class="op-toggle active" data-op="units" data-strand="geometry">📏 Units</div>
+      <div class="op-toggle active" data-op="time" data-strand="geometry">🕐 Time</div>
+    </div>
+  </div>
+
+  <div class="op-selector hidden" id="opSelectorStatistics">
+    <p>Choose topics</p>
+    <div class="op-buttons">
+      <div class="op-toggle active" data-op="mean" data-strand="statistics">📊 Mean</div>
+      <div class="op-toggle active" data-op="range" data-strand="statistics">↔ Range</div>
+      <div class="op-toggle active" data-op="mode" data-strand="statistics">🔁 Mode</div>
+      <div class="op-toggle active" data-op="median" data-strand="statistics">▶ Median</div>
+      <div class="op-toggle active" data-op="probability" data-strand="statistics">🎲 Probability</div>
     </div>
   </div>
 
