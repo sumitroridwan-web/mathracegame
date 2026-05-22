@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Race – Leaderboard</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: radial-gradient(ellipse at top, #0d1b2a 0%, #1b2838 60%, #0a0e1a 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .stars {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(1px 1px at 15% 10%, white, transparent),
+        radial-gradient(1px 1px at 35% 25%, white, transparent),
+        radial-gradient(1.5px 1.5px at 60% 5%, white, transparent),
+        radial-gradient(1px 1px at 80% 15%, white, transparent),
+        radial-gradient(1px 1px at 5% 40%, white, transparent),
+        radial-gradient(1px 1px at 90% 35%, white, transparent),
+        radial-gradient(1.5px 1.5px at 50% 50%, white, transparent),
+        radial-gradient(1px 1px at 25% 60%, white, transparent),
+        radial-gradient(1px 1px at 70% 70%, white, transparent),
+        radial-gradient(1px 1px at 45% 80%, white, transparent),
+        radial-gradient(1px 1px at 10% 90%, white, transparent),
+        radial-gradient(1.5px 1.5px at 85% 85%, white, transparent);
+      opacity: 0.4;
+    }
+
+    .page-wrap {
+      position: relative; z-index: 1;
+      max-width: 820px; margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── HEADER ── */
+    header { text-align: center; margin-bottom: 32px; }
+    .logo {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffcc00, #ff6b35, #ff44aa, #7b2fff);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(255,200,0,0.4));
+    }
+    .logo-sub {
+      font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.45; margin-top: 6px;
+    }
+    .back-btn {
+      display: inline-block; margin-top: 14px;
+      padding: 8px 20px; font-size: 0.85rem; font-weight: 700;
+      border: 2px solid rgba(255,255,255,0.18); border-radius: 20px;
+      color: rgba(255,255,255,0.65); text-decoration: none; letter-spacing: 1px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .back-btn:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.45; margin-bottom: 14px; padding-left: 2px;
+    }
+
+    /* ── RANKINGS TABLE ── */
+    .rankings-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 18px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 52px 1fr 72px 72px 72px 72px;
+      align-items: center;
+      gap: 0;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: background 0.15s;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row:not(.rank-header):hover { background: rgba(255,255,255,0.04); }
+
+    .rank-header {
+      font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+      opacity: 0.35; background: rgba(255,255,255,0.02);
+      padding-top: 12px; padding-bottom: 12px;
+      cursor: default;
+    }
+
+    .rank-medal { font-size: 1.5rem; text-align: center; }
+    .rank-num { font-size: 1.1rem; font-weight: 700; opacity: 0.4; text-align: center; }
+
+    .rank-name { font-size: 1.05rem; font-weight: 700; padding-left: 4px; }
+
+    .rank-stat { text-align: center; }
+    .rank-stat .stat-val { font-size: 1.1rem; font-weight: 800; }
+    .rank-stat .stat-lbl { font-size: 0.65rem; opacity: 0.4; letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+
+    /* Medal colours */
+    .rank-row.rank-1 { background: rgba(255,215,0,0.06); }
+    .rank-row.rank-1 .rank-name { color: #ffd700; }
+    .rank-row.rank-1 .rank-stat .stat-val { color: #ffd700; }
+
+    .rank-row.rank-2 { background: rgba(192,192,192,0.05); }
+    .rank-row.rank-2 .rank-name { color: #d0d0d0; }
+    .rank-row.rank-2 .rank-stat .stat-val { color: #d0d0d0; }
+
+    .rank-row.rank-3 { background: rgba(205,127,50,0.05); }
+    .rank-row.rank-3 .rank-name { color: #cd7f32; }
+    .rank-row.rank-3 .rank-stat .stat-val { color: #cd7f32; }
+
+    /* Win rate bar */
+    .winrate-bar-wrap {
+      background: rgba(255,255,255,0.07);
+      border-radius: 4px; height: 6px; margin-top: 5px;
+      overflow: hidden;
+    }
+    .winrate-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, #00d4ff, #7b2fff);
+      transition: width 0.8s ease;
+    }
+
+    /* ── MATCH HISTORY ── */
+    .history-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .match-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.95rem;
+    }
+    .match-row:last-child { border-bottom: none; }
+
+    .match-player { font-weight: 700; }
+    .match-player.winner { color: #ffcc44; }
+    .match-player.p1side { text-align: left; }
+    .match-player.p2side { text-align: right; }
+
+    .match-scores {
+      text-align: center; font-size: 0.85rem; font-weight: 800;
+      color: rgba(255,255,255,0.5); white-space: nowrap;
+    }
+    .match-scores .vs { margin: 0 4px; opacity: 0.4; font-weight: 400; }
+
+    .match-date {
+      font-size: 0.7rem; opacity: 0.3; white-space: nowrap;
+      text-align: right;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      opacity: 0.45;
+    }
+    .empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 14px; }
+    .empty-state p { font-size: 1rem; letter-spacing: 1px; }
+
+    /* ── FOOTER ACTIONS ── */
+    .footer-actions {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      justify-content: center; margin-top: 8px;
+    }
+    .action-btn {
+      padding: 11px 28px; font-size: 0.95rem; font-weight: 700;
+      border-radius: 12px; cursor: pointer; letter-spacing: 0.5px;
+      text-decoration: none; border: none; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-play {
+      background: linear-gradient(135deg, #ff6b35, #ffaa00);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(255,107,53,0.4);
+    }
+    .btn-play:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(255,107,53,0.6); }
+    .btn-clear {
+      background: rgba(255,60,60,0.1);
+      color: rgba(255,120,120,0.8);
+      border: 2px solid rgba(255,60,60,0.25);
+    }
+    .btn-clear:hover { background: rgba(255,60,60,0.2); color: #ff8888; transform: scale(1.04); }
+
+    @media (max-width: 560px) {
+      .rank-row { grid-template-columns: 42px 1fr 58px 58px 58px; }
+      .rank-row .hide-mobile { display: none; }
+      .match-row { grid-template-columns: 1fr auto 1fr; }
+      .match-date { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<div class="page-wrap">
+  <header>
+    <div class="logo">🏆 Leaderboard</div>
+    <div class="logo-sub">Math Race · All-Time Rankings</div>
+    <a class="back-btn" href="index.html">← Back to Game</a>
+  </header>
+
+  <div id="content"></div>
+
+  <div class="footer-actions">
+    <a class="action-btn btn-play" href="index.html">🚀 Play Now</a>
+    <button class="action-btn btn-clear" id="clearBtn">🗑 Clear History</button>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'mathRaceHistory';
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function buildPlayerStats(history) {
+    const map = {};
+    history.forEach(match => {
+      [0, 1].forEach(idx => {
+        const key = idx === 0 ? 'p1' : 'p2';
+        const { name, score } = match[key];
+        if (!map[name]) map[name] = { name, wins: 0, losses: 0, games: 0, totalScore: 0, totalQ: 0 };
+        map[name].games++;
+        map[name].totalScore += score;
+        map[name].totalQ += match.total;
+        if (match.winner === idx) map[name].wins++;
+        else map[name].losses++;
+      });
+    });
+    return Object.values(map).sort((a, b) =>
+      b.wins - a.wins ||
+      (b.totalScore / b.totalQ) - (a.totalScore / a.totalQ)
+    );
+  }
+
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+           ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function medal(rank) {
+    return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+  }
+
+  function renderRankings(players) {
+    if (!players.length) return '';
+    const rows = players.map((p, i) => {
+      const rank = i + 1;
+      const winRate = p.games ? Math.round((p.wins / p.games) * 100) : 0;
+      const accuracy = p.totalQ ? Math.round((p.totalScore / p.totalQ) * 100) : 0;
+      return `
+        <div class="rank-row rank-${rank <= 3 ? rank : ''}">
+          <div class="rank-medal">${medal(rank)}<span class="rank-num" style="${rank <= 3 ? 'display:none' : ''}">${rank}</span></div>
+          <div class="rank-name">${escHtml(p.name)}</div>
+          <div class="rank-stat">
+            <div class="stat-val">${p.wins}</div>
+            <div class="stat-lbl">Wins</div>
+          </div>
+          <div class="rank-stat">
+            <div class="stat-val">${p.games}</div>
+            <div class="stat-lbl">Games</div>
+          </div>
+          <div class="rank-stat hide-mobile">
+            <div class="stat-val">${accuracy}%</div>
+            <div class="stat-lbl">Accuracy</div>
+            <div class="winrate-bar-wrap">
+              <div class="winrate-bar-fill" style="width:${accuracy}%;background:linear-gradient(90deg,#ff6b35,#ffcc00)"></div>
+            </div>
+          </div>
+          <div class="rank-stat">
+            <div class="stat-val">${winRate}%</div>
+            <div class="stat-lbl">Win Rate</div>
+            <div class="winrate-bar-wrap">
+              <div class="winrate-bar-fill" style="width:${winRate}%"></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="section-title">Player Rankings</div>
+      <div class="rankings-card">
+        <div class="rank-row rank-header">
+          <div></div>
+          <div>Player</div>
+          <div style="text-align:center">Wins</div>
+          <div style="text-align:center">Games</div>
+          <div style="text-align:center" class="hide-mobile">Accuracy</div>
+          <div style="text-align:center">Win Rate</div>
+        </div>
+        ${rows}
+      </div>`;
+  }
+
+  function renderHistory(history) {
+    if (!history.length) return '';
+    const recent = [...history].reverse().slice(0, 15);
+    const rows = recent.map(m => {
+      const p1win = m.winner === 0;
+      const p2win = m.winner === 1;
+      return `
+        <div class="match-row">
+          <div class="match-player p1side ${p1win ? 'winner' : ''}">${escHtml(m.p1.name)}${p1win ? ' 🏆' : ''}</div>
+          <div class="match-scores">
+            <span>${m.p1.score}</span>
+            <span class="vs">vs</span>
+            <span>${m.p2.score}</span>
+            <span style="opacity:0.3;font-size:0.75rem;margin-left:4px">/${m.total}</span>
+          </div>
+          <div class="match-player p2side ${p2win ? 'winner' : ''}">${p2win ? '🏆 ' : ''}${escHtml(m.p2.name)}</div>
+          <div class="match-date">${fmtDate(m.date)}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="section-title">Recent Matches</div>
+      <div class="history-card">${rows}</div>`;
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render() {
+    const history = loadHistory();
+    const content = document.getElementById('content');
+
+    if (!history.length) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🏁</div>
+          <p>No races yet — start playing to build the leaderboard!</p>
+        </div>`;
+      return;
+    }
+
+    const players = buildPlayerStats(history);
+    content.innerHTML = renderRankings(players) + renderHistory(history);
+  }
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if (confirm('Clear all race history? This cannot be undone.')) {
+      localStorage.removeItem(STORAGE_KEY);
+      render();
+    }
+  });
+
+  render();
+</script>
+
+</body>
+</html>

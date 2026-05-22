@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Race!</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: radial-gradient(ellipse at top, #0d1b2a 0%, #1b2838 60%, #0a0e1a 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #fff;
+    }
+
+    /* ── STARS BACKGROUND ── */
+    .stars {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(1px 1px at 15% 10%, white, transparent),
+        radial-gradient(1px 1px at 35% 25%, white, transparent),
+        radial-gradient(1.5px 1.5px at 60% 5%, white, transparent),
+        radial-gradient(1px 1px at 80% 15%, white, transparent),
+        radial-gradient(1px 1px at 5% 40%, white, transparent),
+        radial-gradient(1px 1px at 90% 35%, white, transparent),
+        radial-gradient(1.5px 1.5px at 50% 50%, white, transparent),
+        radial-gradient(1px 1px at 25% 60%, white, transparent),
+        radial-gradient(1px 1px at 70% 70%, white, transparent),
+        radial-gradient(1px 1px at 45% 80%, white, transparent),
+        radial-gradient(1px 1px at 10% 90%, white, transparent),
+        radial-gradient(1.5px 1.5px at 85% 85%, white, transparent);
+      opacity: 0.4;
+    }
+
+    /* ── LAYOUT ── */
+    .game-wrap { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; }
+
+    /* ── HEADER ── */
+    header { text-align: center; padding: 10px 0 14px; }
+    .logo {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ff6b35, #f7c59f, #00d4ff, #7b2fff);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 0 20px rgba(255,107,53,0.5));
+    }
+    .subtitle { font-size: 0.95rem; opacity: 0.55; margin-top: 2px; letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ── RACE TRACKS ── */
+    .tracks-section { margin-bottom: 18px; }
+    .track-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .track-label {
+      width: 72px; font-size: 0.8rem; font-weight: 700;
+      text-align: right; flex-shrink: 0;
+    }
+    .p1 .track-label { color: #ff6b35; }
+    .p2 .track-label { color: #00d4ff; }
+
+    .track {
+      flex: 1; height: 70px; border-radius: 10px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 40%, #222 60%, #1a1a1a 100%);
+      border: 2px solid #444;
+      position: relative; overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.5);
+    }
+
+    /* Road edge lines */
+    .track::before {
+      content: '';
+      position: absolute; top: 6px; left: 0; right: 0; height: 2px;
+      background: rgba(255,255,255,0.15);
+    }
+    .track::after {
+      content: '';
+      position: absolute; bottom: 6px; left: 0; right: 0; height: 2px;
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* Moving road dashes */
+    .road-dash {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 100%; height: 3px; pointer-events: none;
+      background: repeating-linear-gradient(90deg,
+        transparent 0, transparent 18px,
+        rgba(255,220,50,0.4) 18px, rgba(255,220,50,0.4) 36px
+      );
+      animation: roadMove 0.6s linear infinite;
+    }
+    @keyframes roadMove { from { background-position: 0 0; } to { background-position: -36px 0; } }
+
+    /* Finish line */
+    .finish-flag {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 22px;
+      background: repeating-conic-gradient(#fff 0% 25%, #111 25% 50%) 0 0 / 11px 11px;
+      border-left: 2px solid #666;
+      z-index: 5;
+    }
+
+    /* ── CSS RACE CAR ── */
+    .car-slot {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      transition: left 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+      z-index: 4;
+    }
+
+    .race-car { width: 88px; height: 46px; position: relative; }
+
+    /* Wheels */
+    .wheel {
+      position: absolute; width: 18px; height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #888 0%, #444 40%, #111 70%);
+      border: 3px solid #666;
+      bottom: 0; z-index: 2;
+    }
+    .wheel-f { right: 8px; }
+    .wheel-r { left: 8px; }
+    .wheel.spin { animation: wheelSpin 0.25s linear infinite; }
+    @keyframes wheelSpin { to { transform: rotate(360deg); } }
+
+    /* Wheel hub cap dot */
+    .wheel::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px; height: 6px;
+      background: #ccc; border-radius: 50%;
+    }
+
+    /* Car body */
+    .car-body {
+      position: absolute; bottom: 9px; left: 0; right: 0; height: 22px;
+      border-radius: 5px 14px 4px 4px;
+    }
+    .car-body::after {
+      content: ''; position: absolute;
+      top: 3px; left: 6px; right: 28px; height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+    }
+
+    /* Cabin / cockpit */
+    .car-cabin {
+      position: absolute; bottom: 28px; left: 20px; width: 46px; height: 18px;
+      border-radius: 8px 10px 0 0;
+    }
+
+    /* Windshield */
+    .car-window {
+      position: absolute; bottom: 3px; left: 5px; right: 5px; height: 11px;
+      background: linear-gradient(135deg, rgba(140,220,255,0.9), rgba(80,180,255,0.5));
+      border-radius: 5px 7px 0 0;
+    }
+
+    /* Headlight */
+    .car-headlight {
+      position: absolute; right: 2px; bottom: 14px;
+      width: 10px; height: 8px;
+      background: linear-gradient(90deg, #ffe066, #fff8a0);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 10px 4px rgba(255,235,80,0.6);
+    }
+
+    /* Spoiler */
+    .car-spoiler {
+      position: absolute; left: 4px; bottom: 28px;
+      width: 5px; height: 10px;
+    }
+    .car-spoiler::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; width: 5px; height: 10px;
+      background: currentColor; border-radius: 2px;
+    }
+    .car-spoiler::after {
+      content: ''; position: absolute;
+      top: 0; left: -5px; width: 14px; height: 4px;
+      background: currentColor; border-radius: 2px;
+    }
+
+    /* Racing stripe */
+    .car-stripe {
+      position: absolute; bottom: 14px; left: 14px; right: 14px; height: 5px;
+      background: rgba(255,255,255,0.22); border-radius: 2px;
+      top: auto;
+    }
+
+    /* Exhaust */
+    .exhaust {
+      position: absolute; left: -6px; bottom: 12px;
+      width: 6px; height: 8px;
+      background: rgba(120,120,120,0.3);
+      border-radius: 50% 0 0 50%;
+    }
+    .car-slot.boosting .exhaust::before {
+      content: '';
+      position: absolute; left: -20px; top: -4px;
+      width: 26px; height: 14px;
+      background: radial-gradient(ellipse, rgba(255,140,0,0.9), rgba(255,60,0,0.6), transparent);
+      border-radius: 50%;
+      animation: flameFlicker 0.1s linear infinite alternate;
+    }
+    @keyframes flameFlicker {
+      from { transform: scaleX(1) scaleY(1); opacity: 1; }
+      to   { transform: scaleX(1.3) scaleY(0.85); opacity: 0.8; }
+    }
+
+    /* ── PLAYER 1 CAR COLORS ── */
+    .car-p1 .car-body   { background: linear-gradient(175deg, #ff6b35 0%, #cc3300 55%, #aa2200 100%); }
+    .car-p1 .car-cabin  { background: linear-gradient(175deg, #ff8855 0%, #dd4411 100%); }
+    .car-p1 .car-spoiler { color: #aa2200; }
+    .car-p1 .car-headlight { box-shadow: 0 0 12px 5px rgba(255,235,80,0.7); }
+
+    /* ── PLAYER 2 CAR COLORS ── */
+    .car-p2 .car-body   { background: linear-gradient(175deg, #00c8ff 0%, #0066cc 55%, #004499 100%); }
+    .car-p2 .car-cabin  { background: linear-gradient(175deg, #33ddff 0%, #0088ee 100%); }
+    .car-p2 .car-spoiler { color: #004499; }
+    .car-p2 .car-headlight { background: linear-gradient(90deg, #aaf0ff, #eeffff); box-shadow: 0 0 12px 5px rgba(100,230,255,0.7); }
+
+    /* ── PLAYERS PANELS ── */
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .panel {
+      border-radius: 16px;
+      padding: 18px 16px 14px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s;
+    }
+    .panel::before {
+      content: ''; position: absolute; inset: 0; border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      pointer-events: none;
+    }
+    .panel-p1 {
+      background: linear-gradient(145deg, rgba(255,107,53,0.12), rgba(30,15,10,0.6));
+      border: 2px solid rgba(255,107,53,0.4);
+      box-shadow: 0 0 24px rgba(255,107,53,0.12), inset 0 1px 0 rgba(255,107,53,0.2);
+    }
+    .panel-p2 {
+      background: linear-gradient(145deg, rgba(0,212,255,0.12), rgba(10,15,30,0.6));
+      border: 2px solid rgba(0,212,255,0.4);
+      box-shadow: 0 0 24px rgba(0,212,255,0.12), inset 0 1px 0 rgba(0,212,255,0.2);
+    }
+
+    .panel-name {
+      font-size: 1.1rem; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .panel-p1 .panel-name { color: #ff8855; }
+    .panel-p2 .panel-name { color: #33ddff; }
+
+    .panel-hint { font-size: 0.72rem; opacity: 0.4; letter-spacing: 1px; margin-bottom: 12px; }
+
+    .question-box {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      padding: 12px 8px;
+      margin-bottom: 12px;
+      min-height: 58px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .question-text {
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-p1 .question-text { color: #ffd4b8; }
+    .panel-p2 .question-text { color: #b8f0ff; }
+
+    .op-badge {
+      display: inline-block;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 20px;
+      margin-bottom: 8px;
+    }
+    .op-add    { background: rgba(100,220,100,0.2); color: #88ff88; border: 1px solid rgba(100,220,100,0.4); }
+    .op-sub    { background: rgba(255,180,50,0.2);  color: #ffdd66; border: 1px solid rgba(255,180,50,0.4); }
+    .op-mul    { background: rgba(200,100,255,0.2); color: #dd88ff; border: 1px solid rgba(200,100,255,0.4); }
+    .op-div    { background: rgba(100,200,255,0.2); color: #88ddff; border: 1px solid rgba(100,200,255,0.4); }
+
+    .answer-wrap { display: flex; gap: 8px; justify-content: center; align-items: center; }
+
+    .answer-input {
+      width: 110px; padding: 10px 12px;
+      font-size: 1.4rem; font-weight: 700;
+      text-align: center; border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.35); color: #fff;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      font-variant-numeric: tabular-nums;
+    }
+    .answer-input:focus {
+      border-color: rgba(255,255,255,0.5);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+    }
+    .panel-p1 .answer-input:focus { border-color: #ff8855; box-shadow: 0 0 0 3px rgba(255,107,53,0.2); }
+    .panel-p2 .answer-input:focus { border-color: #33ddff; box-shadow: 0 0 0 3px rgba(0,212,255,0.2); }
+
+    .submit-btn {
+      padding: 10px 16px; font-size: 1rem; font-weight: 700;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .submit-btn:active { transform: scale(0.94); }
+    .panel-p1 .submit-btn { background: linear-gradient(135deg, #ff6b35, #cc3300); color: #fff; }
+    .panel-p2 .submit-btn { background: linear-gradient(135deg, #00c8ff, #0055cc); color: #fff; }
+
+    .feedback-row {
+      height: 26px; margin-top: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .fb-correct { color: #44ff88; }
+    .fb-wrong   { color: #ff4455; animation: shake 0.3s ease; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%  { transform: translateX(-5px); }
+      75%  { transform: translateX(5px); }
+    }
+
+    /* Progress row */
+    .progress-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 10px; font-size: 0.78rem;
+    }
+    .progress-label { opacity: 0.5; flex-shrink: 0; }
+    .progress-bar-wrap {
+      flex: 1; height: 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.1); overflow: hidden;
+    }
+    .progress-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%; }
+    .panel-p1 .progress-bar { background: linear-gradient(90deg, #ff6b35, #ffaa55); }
+    .panel-p2 .progress-bar { background: linear-gradient(90deg, #00c8ff, #55eeff); }
+    .progress-count { opacity: 0.7; font-weight: 700; flex-shrink: 0; min-width: 34px; text-align: right; }
+
+    /* ── OVERLAY SCREENS ── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(5, 10, 20, 0.93);
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+    .overlay.hidden { display: none; }
+
+    /* Start screen */
+    .start-title {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b35, #ffcc00, #00d4ff);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .start-desc { opacity: 0.55; font-size: 0.95rem; margin-bottom: 28px; letter-spacing: 1px; }
+
+    .name-inputs { display: flex; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; justify-content: center; }
+    .name-group { text-align: center; }
+    .name-group label { display: block; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; opacity: 0.6; }
+    .name-group.p1 label { color: #ff8855; }
+    .name-group.p2 label { color: #33ddff; }
+    .name-input {
+      padding: 10px 14px; font-size: 1.05rem; border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06); color: #fff;
+      outline: none; width: 150px; text-align: center; font-weight: 600;
+      transition: border-color 0.2s;
+    }
+    .name-group.p1 .name-input:focus { border-color: #ff6b35; }
+    .name-group.p2 .name-input:focus { border-color: #00c8ff; }
+
+    /* Operation selector */
+    .op-selector { margin-bottom: 24px; text-align: center; }
+    .op-selector p { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-bottom: 10px; }
+    .op-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .op-toggle {
+      padding: 7px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5);
+      cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      transition: all 0.2s; user-select: none;
+    }
+    .op-toggle.active {
+      background: rgba(255,255,255,0.12); color: #fff;
+      border-color: rgba(255,255,255,0.5);
+    }
+    .op-toggle[data-op="add"].active    { border-color: #88ff88; color: #88ff88; background: rgba(100,220,100,0.1); }
+    .op-toggle[data-op="sub"].active    { border-color: #ffdd66; color: #ffdd66; background: rgba(255,180,50,0.1); }
+    .op-toggle[data-op="mul"].active    { border-color: #dd88ff; color: #dd88ff; background: rgba(200,100,255,0.1); }
+    .op-toggle[data-op="div"].active    { border-color: #88ddff; color: #88ddff; background: rgba(100,200,255,0.1); }
+
+    /* Questions selector */
+    .q-selector { margin-bottom: 28px; text-align: center; }
+    .q-selector p { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; margin-bottom: 8px; }
+    .q-buttons { display: flex; gap: 8px; justify-content: center; }
+    .q-btn {
+      padding: 7px 18px; border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5);
+      cursor: pointer; font-size: 0.9rem; font-weight: 700;
+      transition: all 0.2s;
+    }
+    .q-btn.active {
+      background: rgba(255,200,50,0.12); color: #ffcc44;
+      border-color: rgba(255,200,50,0.5);
+    }
+
+    .start-btn {
+      padding: 15px 48px; font-size: 1.25rem; font-weight: 800;
+      border: none; border-radius: 14px; cursor: pointer;
+      background: linear-gradient(135deg, #ff6b35 0%, #ffaa00 50%, #ff6b35 100%);
+      background-size: 200%;
+      color: #fff; letter-spacing: 1px; text-transform: uppercase;
+      box-shadow: 0 6px 24px rgba(255,107,53,0.5);
+      transition: transform 0.15s, box-shadow 0.15s, background-position 0.4s;
+    }
+    .start-btn:hover {
+      transform: scale(1.05);
+      background-position: right;
+      box-shadow: 0 8px 32px rgba(255,107,53,0.7);
+    }
+
+    /* Win screen */
+    .win-trophy { font-size: 5rem; margin-bottom: 12px; animation: bounce 0.6s ease infinite alternate; }
+    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+    .win-title {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 900; margin-bottom: 8px;
+    }
+    .win-subtitle { opacity: 0.55; font-size: 1rem; margin-bottom: 8px; }
+    .win-scores {
+      display: flex; gap: 24px; margin: 20px 0 28px;
+    }
+    .win-score-card {
+      background: rgba(255,255,255,0.06); border-radius: 12px;
+      padding: 14px 24px; text-align: center; min-width: 110px;
+    }
+    .win-score-name { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 4px; }
+    .win-score-val { font-size: 2rem; font-weight: 900; }
+    .play-again-btn {
+      padding: 13px 36px; font-size: 1.1rem; font-weight: 800;
+      border: none; border-radius: 12px; cursor: pointer;
+      background: linear-gradient(135deg, #00c8ff, #7b2fff);
+      color: #fff; letter-spacing: 1px;
+      box-shadow: 0 5px 20px rgba(0,200,255,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .play-again-btn:hover { transform: scale(1.05); box-shadow: 0 8px 28px rgba(0,200,255,0.55); }
+
+    .win-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .leaderboard-btn {
+      display: inline-block;
+      padding: 13px 28px; font-size: 1.1rem; font-weight: 800;
+      border: 2px solid rgba(255,204,0,0.5); border-radius: 12px; cursor: pointer;
+      background: rgba(255,204,0,0.1); color: #ffcc44;
+      text-decoration: none; letter-spacing: 1px;
+      transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(255,204,0,0.15);
+    }
+    .leaderboard-btn:hover { transform: scale(1.05); background: rgba(255,204,0,0.2); box-shadow: 0 6px 24px rgba(255,204,0,0.35); }
+    .leaderboard-link {
+      display: inline-block; margin-top: 18px;
+      font-size: 0.85rem; color: rgba(255,204,0,0.7);
+      text-decoration: none; letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255,204,0,0.3);
+      transition: color 0.2s;
+    }
+    .leaderboard-link:hover { color: #ffcc44; }
+
+    /* Confetti particles */
+    .confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 49; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; top: -10px;
+      width: 8px; height: 14px;
+      border-radius: 2px;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg) translateX(0); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg) translateX(var(--dx)); opacity: 0; }
+    }
+
+    /* Speed burst flash */
+    .speed-flash {
+      position: absolute; inset: 0; border-radius: 16px;
+      pointer-events: none; opacity: 0;
+    }
+    .speed-flash.go { animation: speedFlash 0.35s ease forwards; }
+    @keyframes speedFlash {
+      0%  { opacity: 0.55; background: rgba(255,255,255,0.25); }
+      100%{ opacity: 0; }
+    }
+
+    /* ── NUMPAD KEYBOARD ── */
+    .numpad {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .numpad.visible { display: grid; }
+
+    .numkey {
+      padding: 0;
+      height: 52px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.08s, background 0.1s, box-shadow 0.1s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .numkey:hover { background: rgba(255,255,255,0.15); }
+    .numkey:active { transform: scale(0.88); background: rgba(255,255,255,0.22); }
+
+    .numkey-del {
+      background: rgba(255,80,60,0.15);
+      color: #ff8875;
+      border-color: rgba(255,80,60,0.25);
+      font-size: 1.1rem;
+    }
+    .numkey-del:hover { background: rgba(255,80,60,0.25); }
+
+    .numkey-go {
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+    .panel-p1 .numkey-go {
+      background: linear-gradient(135deg, rgba(255,107,53,0.35), rgba(204,51,0,0.35));
+      color: #ffb899;
+      border-color: rgba(255,107,53,0.4);
+    }
+    .panel-p1 .numkey-go:hover { background: linear-gradient(135deg, rgba(255,107,53,0.55), rgba(204,51,0,0.55)); color: #fff; }
+
+    .panel-p2 .numkey-go {
+      background: linear-gradient(135deg, rgba(0,200,255,0.3), rgba(0,85,204,0.3));
+      color: #99e8ff;
+      border-color: rgba(0,200,255,0.4);
+    }
+    .panel-p2 .numkey-go:hover { background: linear-gradient(135deg, rgba(0,200,255,0.5), rgba(0,85,204,0.5)); color: #fff; }
+
+    /* answer display becomes read-only feel during game */
+    .answer-input.readonly-look { pointer-events: none; caret-color: transparent; }
+
+    /* Responsive */
+    @media (max-width: 560px) {
+      .panels { grid-template-columns: 1fr; }
+      .name-inputs { gap: 14px; }
+      .numkey { height: 46px; font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<!-- ════ START SCREEN ════ -->
+<div class="overlay" id="startScreen">
+  <div class="start-title">🏁 Math Race!</div>
+  <div class="start-desc">Two players · One track · Fastest math wins</div>
+
+  <div class="name-inputs">
+    <div class="name-group p1">
+      <label>🔴 Player 1 (Red Car)</label>
+      <input class="name-input" id="name1" type="text" placeholder="Player 1" maxlength="14">
+    </div>
+    <div class="name-group p2">
+      <label>🔵 Player 2 (Blue Car)</label>
+      <input class="name-input" id="name2" type="text" placeholder="Player 2" maxlength="14">
+    </div>
+  </div>
+
+  <div class="op-selector">
+    <p>Choose operations</p>
+    <div class="op-buttons">
+      <div class="op-toggle active" data-op="add">➕ Addition</div>
+      <div class="op-toggle active" data-op="sub">➖ Subtraction</div>
+      <div class="op-toggle active" data-op="mul">✖ Multiply</div>
+      <div class="op-toggle active" data-op="div">➗ Division</div>
+    </div>
+  </div>
+
+  <div class="q-selector">
+    <p>Questions to win</p>
+    <div class="q-buttons">
+      <div class="q-btn" data-q="5">5</div>
+      <div class="q-btn active" data-q="10">10</div>
+      <div class="q-btn" data-q="15">15</div>
+      <div class="q-btn" data-q="20">20</div>
+    </div>
+  </div>
+
+  <button class="start-btn" id="startBtn">Start Race! 🚀</button>
+  <a class="leaderboard-link" href="leaderboard.html">🏆 View Leaderboard</a>
+</div>
+
+<!-- ════ WIN SCREEN ════ -->
+<div class="overlay hidden" id="winScreen">
+  <div class="confetti-wrap" id="confettiWrap"></div>
+  <div class="win-trophy">🏆</div>
+  <div class="win-title" id="winTitle"></div>
+  <div class="win-subtitle" id="winSubtitle"></div>
+  <div class="win-scores">
+    <div class="win-score-card">
+      <div class="win-score-name" id="winN1"></div>
+      <div class="win-score-val" id="winS1" style="color:#ff8855"></div>
+    </div>
+    <div class="win-score-card">
+      <div class="win-score-name" id="winN2"></div>
+      <div class="win-score-val" id="winS2" style="color:#33ddff"></div>
+    </div>
+  </div>
+  <div class="win-actions">
+    <button class="play-again-btn" id="playAgainBtn">🔄 Play Again</button>
+    <a class="leaderboard-btn" href="leaderboard.html">🏆 Leaderboard</a>
+  </div>
+</div>
+
+<!-- ════ GAME ════ -->
+<div class="game-wrap">
+  <header>
+    <div class="logo">🏁 Math Race!</div>
+    <div class="subtitle">Use the numpad · Press ✓ OK · Race to the finish</div>
+  </header>
+
+  <!-- TRACKS -->
+  <div class="tracks-section">
+    <!-- Player 1 track -->
+    <div class="track-row p1">
+      <div class="track-label" id="lbl1">P1</div>
+      <div class="track" id="track1">
+        <div class="road-dash"></div>
+        <div class="finish-flag"></div>
+        <div class="car-slot" id="carSlot1" style="left:10px">
+          <div class="race-car car-p1">
+            <div class="car-spoiler"></div>
+            <div class="car-cabin"><div class="car-window"></div></div>
+            <div class="car-body">
+              <div class="car-stripe"></div>
+              <div class="car-headlight"></div>
+            </div>
+            <div class="exhaust"></div>
+            <div class="wheel wheel-r"></div>
+            <div class="wheel wheel-f"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player 2 track -->
+    <div class="track-row p2">
+      <div class="track-label" id="lbl2">P2</div>
+      <div class="track" id="track2">
+        <div class="road-dash"></div>
+        <div class="finish-flag"></div>
+        <div class="car-slot" id="carSlot2" style="left:10px">
+          <div class="race-car car-p2">
+            <div class="car-spoiler"></div>
+            <div class="car-cabin"><div class="car-window"></div></div>
+            <div class="car-body">
+              <div class="car-stripe"></div>
+              <div class="car-headlight"></div>
+            </div>
+            <div class="exhaust"></div>
+            <div class="wheel wheel-r"></div>
+            <div class="wheel wheel-f"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANELS -->
+  <div class="panels">
+    <!-- Player 1 Panel -->
+    <div class="panel panel-p1">
+      <div class="speed-flash" id="flash1"></div>
+      <div class="panel-name" id="pname1">Player 1</div>
+      <div class="panel-hint">Tap numbers below → press ✓ OK</div>
+      <div class="op-badge op-add" id="opbadge1">Addition</div>
+      <div class="question-box">
+        <div class="question-text" id="question1">?</div>
+      </div>
+      <div class="answer-wrap">
+        <input class="answer-input" id="input1" type="number" placeholder="?" autocomplete="off" inputmode="numeric">
+        <button class="submit-btn" id="btn1">GO</button>
+      </div>
+      <div class="feedback-row" id="fb1"></div>
+      <div class="numpad" id="numpad1">
+        <button class="numkey" data-p="0" data-val="7">7</button>
+        <button class="numkey" data-p="0" data-val="8">8</button>
+        <button class="numkey" data-p="0" data-val="9">9</button>
+        <button class="numkey" data-p="0" data-val="4">4</button>
+        <button class="numkey" data-p="0" data-val="5">5</button>
+        <button class="numkey" data-p="0" data-val="6">6</button>
+        <button class="numkey" data-p="0" data-val="1">1</button>
+        <button class="numkey" data-p="0" data-val="2">2</button>
+        <button class="numkey" data-p="0" data-val="3">3</button>
+        <button class="numkey numkey-del" data-p="0" data-val="del">⌫</button>
+        <button class="numkey" data-p="0" data-val="0">0</button>
+        <button class="numkey numkey-go" data-p="0" data-val="go">✓ OK</button>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Progress</span>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="bar1"></div></div>
+        <span class="progress-count" id="cnt1">0/10</span>
+      </div>
+    </div>
+
+    <!-- Player 2 Panel -->
+    <div class="panel panel-p2">
+      <div class="speed-flash" id="flash2"></div>
+      <div class="panel-name" id="pname2">Player 2</div>
+      <div class="panel-hint">Tap numbers below → press ✓ OK</div>
+      <div class="op-badge op-add" id="opbadge2">Addition</div>
+      <div class="question-box">
+        <div class="question-text" id="question2">?</div>
+      </div>
+      <div class="answer-wrap">
+        <input class="answer-input" id="input2" type="number" placeholder="?" autocomplete="off" inputmode="numeric">
+        <button class="submit-btn" id="btn2">GO</button>
+      </div>
+      <div class="feedback-row" id="fb2"></div>
+      <div class="numpad" id="numpad2">
+        <button class="numkey" data-p="1" data-val="7">7</button>
+        <button class="numkey" data-p="1" data-val="8">8</button>
+        <button class="numkey" data-p="1" data-val="9">9</button>
+        <button class="numkey" data-p="1" data-val="4">4</button>
+        <button class="numkey" data-p="1" data-val="5">5</button>
+        <button class="numkey" data-p="1" data-val="6">6</button>
+        <button class="numkey" data-p="1" data-val="1">1</button>
+        <button class="numkey" data-p="1" data-val="2">2</button>
+        <button class="numkey" data-p="1" data-val="3">3</button>
+        <button class="numkey numkey-del" data-p="1" data-val="del">⌫</button>
+        <button class="numkey" data-p="1" data-val="0">0</button>
+        <button class="numkey numkey-go" data-p="1" data-val="go">✓ OK</button>
+      </div>
+      <div class="progress-row">
+        <span class="progress-label">Progress</span>
+        <div class="progress-bar-wrap"><div class="progress-bar" id="bar2"></div></div>
+        <span class="progress-count" id="cnt2">0/10</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+
+</body>
+</html>
